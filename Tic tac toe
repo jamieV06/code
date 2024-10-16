@@ -1,76 +1,83 @@
-def print_board(board):
-    """Prints the current game board."""
-    for row in board:
-        print(" | ".join(row))
-        print("-" * 5)
+import tkinter as tk
+from tkinter import messagebox
 
-def check_winner(board, player):
-    """Checks if the current player has won the game."""
-    # Check rows, columns, and diagonals for a winning combination
-    for row in board:
-        if all([cell == player for cell in row]):
-            return True
-
-    for col in range(3):
-        if all([board[row][col] == player for row in range(3)]):
-            return True
-
-    if all([board[i][i] == player for i in range(3)]) or \
-       all([board[i][2-i] == player for i in range(3)]):
-        return True
-
-    return False
-
-def check_draw(board):
-    """Checks if the game is a draw."""
-    return all([cell != ' ' for row in board for cell in row])
-
-def play_game():
-    """Main function to play the Tic-Tac-Toe game."""
-    # Initialize the board
-    board = [[' ' for _ in range(3)] for _ in range(3)]
-    current_player = 'X'
-    game_over = False
-
-    print("Welcome to Tic-Tac-Toe!")
-    print_board(board)
-
-    # Game loop
-    while not game_over:
-        try:
-            # Get the player's move
-            move = input(f"Player {current_player}, enter your move (row and column as 'row,col'): ")
-            row, col = map(int, move.split(','))
-
-            if board[row][col] != ' ':
-                print("This spot is already taken. Try again.")
-                continue
-
-            # Update the board with the player's move
-            board[row][col] = current_player
-            print_board(board)
-
-            # Check for a win or draw
-            if check_winner(board, current_player):
-                print(f"Player {current_player} wins!")
-                game_over = True
-            elif check_draw(board):
-                print("It's a draw!")
-                game_over = True
-            else:
-                # Switch player
-                current_player = 'O' if current_player == 'X' else 'X'
-
-        except (ValueError, IndexError):
-            print("Invalid input. Please enter the row and column as two numbers separated by a comma (e.g., 0,1).")
+class TicTacToe:
+    def __init__(self, root):
+        """Initialize the game window and set up the game board."""
+        self.root = root
+        self.root.title("Tic-Tac-Toe")
+        self.board = [['' for _ in range(3)] for _ in range(3)]  # 3x3 game board
+        self.current_player = 'X'  # Start with player 'X'
+        self.buttons = [[None for _ in range(3)] for _ in range(3)]  # Hold button references
+        self.moves = 0  # Track the number of moves
+        self.create_board()
     
-    # Ask for a new game
-    play_again = input("Do you want to play again? (yes/no): ").lower()
-    if play_again == 'yes':
-        play_game()
-    else:
-        print("Thanks for playing!")
+    def create_board(self):
+        """Create the 3x3 grid of buttons representing the game board."""
+        for row in range(3):
+            for col in range(3):
+                button = tk.Button(self.root, text='', font='Arial 20 bold', width=5, height=2,
+                                   command=lambda r=row, c=col: self.make_move(r, c))
+                button.grid(row=row, column=col)
+                self.buttons[row][col] = button
+        
+        # Create a Reset button to restart the game
+        reset_button = tk.Button(self.root, text="Reset", font='Arial 15 bold', width=10, height=1, command=self.reset_game)
+        reset_button.grid(row=3, column=0, columnspan=3)
 
-# Start the game
+    def make_move(self, row, col):
+        """Handle a player's move."""
+        if self.board[row][col] == '' and not self.check_winner():
+            # Update the board and button with the current player's move
+            self.board[row][col] = self.current_player
+            self.buttons[row][col].config(text=self.current_player)
+
+            # Increment move count and check for win or draw
+            self.moves += 1
+            if self.check_winner():
+                messagebox.showinfo("Game Over", f"Player {self.current_player} wins!")
+                self.disable_board()  # Disable buttons after a win
+            elif self.moves == 9:
+                messagebox.showinfo("Game Over", "It's a draw!")
+            else:
+                # Switch to the other player
+                self.current_player = 'O' if self.current_player == 'X' else 'X'
+
+    def check_winner(self):
+        """Check if the current player has won."""
+        # Check rows, columns, and diagonals for a winning line
+        for i in range(3):
+            # Check rows and columns
+            if all(self.board[i][j] == self.current_player for j in range(3)) or \
+               all(self.board[j][i] == self.current_player for j in range(3)):
+                return True
+        
+        # Check diagonals
+        if all(self.board[i][i] == self.current_player for i in range(3)) or \
+           all(self.board[i][2-i] == self.current_player for i in range(3)):
+            return True
+        
+        return False
+
+    def disable_board(self):
+        """Disable all buttons after the game ends."""
+        for row in range(3):
+            for col in range(3):
+                self.buttons[row][col].config(state=tk.DISABLED)
+
+    def reset_game(self):
+        """Reset the game to its initial state."""
+        self.board = [['' for _ in range(3)] for _ in range(3)]  # Clear the board
+        self.current_player = 'X'  # Set the first player to 'X'
+        self.moves = 0  # Reset the move counter
+        
+        # Reset the buttons and re-enable them
+        for row in range(3):
+            for col in range(3):
+                self.buttons[row][col].config(text='', state=tk.NORMAL)
+
+# Create the main window and start the game
 if __name__ == "__main__":
-    play_game()
+    root = tk.Tk()
+    game = TicTacToe(root)
+    root.mainloop()
